@@ -1,0 +1,92 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.8'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.google.cloud.tools.jib' version '3.4.3'
+}
+
+group = 'com.hyunha.stock'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.0")
+}
+
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+/**
+ * ✅ Jib (Dockerfile 없이 이미지 빌드)
+ */
+jib {
+	from {
+		image = "eclipse-temurin:21-jre"
+	}
+
+	to {
+		image = "docker.io/nohyunha95/stock-service"
+		tags = ["0.0.4", "latest"]
+	}
+
+	container {
+		// 스프링 부트 포트
+		ports = ["8080"]
+
+		// JVM 옵션
+		jvmFlags = ["-Xms256m", "-Xmx512m"]
+
+		// 권장: 컨테이너 시간대/인코딩
+		environment = [
+				"TZ": "Asia/Seoul",
+				"JAVA_TOOL_OPTIONS": "-Dfile.encoding=UTF-8"
+		]
+	}
+}
