@@ -16,8 +16,10 @@ public class PeriodPriceController {
     @GetMapping("/period-prices")
     public DomesticStockPriceResponse getCandles(
             @RequestParam String symbol,
-            @RequestParam String periodType
+            @RequestParam String periodType,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String from
             ) throws JsonProcessingException {
-        return candleQueryService.getCandles(symbol, periodType);
+        return candleQueryService.getCandles(symbol, periodType, from, to);
     }
 }

@@ -73,12 +73,12 @@ jib {
 
 	to {
 		image = "docker.io/nohyunha95/stock-service"
-		tags = ["0.0.4", "latest"]
+		tags = ["0.0.6", "latest"]
 	}
 
 	container {
 		// 스프링 부트 포트
-		ports = ["8080"]
+		ports = ["8082"]
 
 		// JVM 옵션
 		jvmFlags = ["-Xms256m", "-Xmx512m"]
