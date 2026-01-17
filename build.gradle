@@ -76,7 +76,7 @@ jib {
 
 	to {
 		image = "docker.io/nohyunha95/stock-service"
-		tags = ["0.0.8", "latest"]
+		tags = ["0.0.9", "latest"]
 	}
 
 	container {

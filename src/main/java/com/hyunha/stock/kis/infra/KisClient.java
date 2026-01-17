@@ -1,6 +1,7 @@
 package com.hyunha.stock.kis.infra;
 
 import com.hyunha.stock.kis.infra.dto.DomesticStockPriceResponse;
+import com.hyunha.stock.kis.infra.dto.InvestmentOpinionApiResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -8,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 @RequiredArgsConstructor
@@ -17,6 +20,8 @@ public class KisClient {
     private final RestClient kisRestClient;
     private final TokenProvider tokenProvider;
     private final KisProperties kisProperties;
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("00yyyyMMdd");
+
 
     /**
      * https://apiportal.koreainvestment.com/apiservice-apiservice?/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice
@@ -38,6 +43,25 @@ public class KisClient {
                 .body(DomesticStockPriceResponse.class);
     }
 
+    /**
+     * https://apiportal.koreainvestment.com/apiservice-apiservice?/uapi/domestic-stock/v1/quotations/invest-opinion
+     * 국내주식 종목투자의견 [국내주식-188]
+     */
+    public InvestmentOpinionApiResponse fetchInvestmentOpinion(String symbol, LocalDateTime now) {
+        return kisRestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/uapi/domestic-stock/v1/quotations/invest-opinion")
+                        .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+                        .queryParam("FID_COND_SCR_DIV_CODE", 16633)
+                        .queryParam("FID_INPUT_ISCD", symbol)
+                        .queryParam("FID_INPUT_DATE_1", formatter.format(now.minusYears(1)))
+                        .queryParam("FID_INPUT_DATE_2", formatter.format(now))
+                        .build())
+                .headers(getCommonHttpHeaders("FHKST663300C0"))
+                .retrieve()
+                .body(InvestmentOpinionApiResponse.class);
+    }
+
     private @NonNull Consumer<HttpHeaders> getCommonHttpHeaders(String transactionId) {
         return httpHeaders -> {
             httpHeaders.setBearerAuth(tokenProvider.getAccessToken());
@@ -48,4 +72,6 @@ public class KisClient {
             httpHeaders.set("custtype", "P");
         };
     }
+
+
 }

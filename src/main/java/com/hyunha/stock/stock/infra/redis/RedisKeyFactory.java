@@ -5,10 +5,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RedisKeyFactory {
-    private static final String LATEST_KEY = "trade:rank:NAS:%s:latest";
     public static final String RANKING_KEY = "stock:momentum:top20:NAS";
+    public static final String INVESTMENT_OPINION_KEY = "stock:investment-opinion";
 
-    public String latestKey(TradeRankingType type) {
-        return LATEST_KEY.formatted(type.name());
-    }
+
 }
