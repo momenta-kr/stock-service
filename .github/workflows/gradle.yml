@@ -70,6 +70,6 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        git add charts/stock-service/values-prod.yml
+        git add stock-service/values-prod.yml
         git commit -m "chore(prod): bump stock-service image tag to ${TAG}" || exit 0
         git push
