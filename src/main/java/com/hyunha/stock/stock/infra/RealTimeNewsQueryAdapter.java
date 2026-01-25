@@ -9,6 +9,7 @@ import com.hyunha.stock.stock.infra.jpa.entity.StockMasterId;
 import com.hyunha.stock.stock.infra.jpa.repo.StockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
@@ -31,11 +32,13 @@ public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
         List<NewsDocument> newsDocuments = newsEsRepository.findByOrderByPublishedAt(Pageable.ofSize(2000));
         List<StockMasterId> stockMasterIds = new ArrayList<>(newsDocuments.stream()
                 .map(NewsDocument::getSymbol)
+                .filter(StringUtils::isNotBlank)
                 .map(StockMasterId::kospi)
                 .toList());
 
         newsDocuments.stream()
                 .map(NewsDocument::getSymbol)
+                .filter(StringUtils::isNotBlank)
                 .map(StockMasterId::kosdaq)
                 .forEach(stockMasterIds::add);
 

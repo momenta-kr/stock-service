@@ -35,14 +35,14 @@ public class StockMasterId implements Serializable {
     public static StockMasterId kospi(String symbol) {
         StockMasterId stockMasterId = new StockMasterId();
         stockMasterId.market = "KOSPI";
-        stockMasterId.symbol = symbol.split("\\.")[0];
+        stockMasterId.symbol = symbol;
         return stockMasterId;
     }
 
     public static StockMasterId kosdaq(String symbol) {
         StockMasterId stockMasterId = new StockMasterId();
         stockMasterId.market = "KOSDAQ";
-        stockMasterId.symbol = symbol.split("\\.")[0];
+        stockMasterId.symbol = symbol;
         return stockMasterId;
     }
 }
