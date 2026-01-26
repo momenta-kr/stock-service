@@ -9,6 +9,7 @@ import com.hyunha.stock.stock.infra.jpa.entity.StockMasterId;
 import com.hyunha.stock.stock.infra.jpa.repo.StockRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
@@ -31,19 +32,21 @@ public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
         List<NewsDocument> newsDocuments = newsEsRepository.findByOrderByPublishedAtDesc(Pageable.ofSize(2000));
         List<StockMasterId> stockMasterIds = new ArrayList<>(newsDocuments.stream()
                 .map(NewsDocument::getSymbol)
+                .filter(StringUtils::isNotBlank)
                 .map(StockMasterId::kospi)
                 .toList());
 
         newsDocuments.stream()
                 .map(NewsDocument::getSymbol)
+                .filter(StringUtils::isNotBlank)
                 .map(StockMasterId::kosdaq)
                 .forEach(stockMasterIds::add);
 
         newsDocuments.stream()
-                .filter(newsDocument -> newsDocument.getRelatedStockCode() != null)
+                .filter(newsDocument -> newsDocument.getRelatedStockCodes() != null)
                 .map(newsDocument -> {
-                    List<StockMasterId> stockMasterIds1 = newsDocument.getRelatedStockCode().stream().map(StockMasterId::kospi).toList();
-                    List<StockMasterId> stockMasterIds2 = newsDocument.getRelatedStockCode().stream().map(StockMasterId::kosdaq).toList();
+                    List<StockMasterId> stockMasterIds1 = newsDocument.getRelatedStockCodes().stream().map(StockMasterId::kospi).toList();
+                    List<StockMasterId> stockMasterIds2 = newsDocument.getRelatedStockCodes().stream().map(StockMasterId::kosdaq).toList();
                     return List.of(stockMasterIds1, stockMasterIds2);
                 })
                 .flatMap(Collection::stream)
