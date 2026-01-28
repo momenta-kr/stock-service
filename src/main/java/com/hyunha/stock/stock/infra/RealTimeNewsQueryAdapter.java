@@ -14,56 +14,67 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
 
+    private static final int PAGE_SIZE = 500;
+
     private final NewsEsRepository newsEsRepository;
     private final StockRepository stockRepository;
 
     public List<GetRealTimeNewsResponse> getRealTimeNews() {
-        List<NewsDocument> newsDocuments = newsEsRepository.findByOrderByPublishedAtDesc(Pageable.ofSize(500));
-        List<StockMasterId> stockMasterIds = new ArrayList<>(newsDocuments.stream()
-                .map(NewsDocument::getSymbol)
+        List<NewsDocument> newsDocuments =
+                newsEsRepository.findByOrderByPublishedAtDesc(Pageable.ofSize(PAGE_SIZE));
+
+        if (newsDocuments.isEmpty()) {
+            return List.of();
+        }
+
+        // 1) 뉴스 문서에서 심볼(대표 + related) 뽑고, kospi/kosdaq 둘 다 만들어서 중복 제거
+        Set<StockMasterId> stockMasterIds = newsDocuments.stream()
+                .flatMap(RealTimeNewsQueryAdapter::extractSymbols)
                 .filter(StringUtils::isNotBlank)
-                .map(StockMasterId::kospi)
-                .toList());
+                .flatMap(RealTimeNewsQueryAdapter::toBothMarkets)
+                .collect(Collectors.toCollection(LinkedHashSet::new)); // 순서 유지 + 중복 제거
 
-        newsDocuments.stream()
-                .map(NewsDocument::getSymbol)
-                .filter(StringUtils::isNotBlank)
-                .map(StockMasterId::kosdaq)
-                .forEach(stockMasterIds::add);
-
-        newsDocuments.stream()
-                .filter(newsDocument -> newsDocument.getRelatedStockCodes() != null)
-                .map(newsDocument -> {
-                    List<StockMasterId> stockMasterIds1 = newsDocument.getRelatedStockCodes().stream().map(StockMasterId::kospi).toList();
-                    List<StockMasterId> stockMasterIds2 = newsDocument.getRelatedStockCodes().stream().map(StockMasterId::kosdaq).toList();
-                    return List.of(stockMasterIds1, stockMasterIds2);
-                })
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .forEach(stockMasterIds::add);
-
-
-        Map<String, Stock> stockByStockCode = stockRepository.findByIdIn(stockMasterIds)
+        // 2) DB 조회 후 symbol 기준으로 매핑(중복은 먼저 들어온 걸 우선)
+        Map<String, Stock> stockByStockCode = stockRepository.findByIdIn(new ArrayList<>(stockMasterIds))
                 .stream()
-                .collect(Collectors.toMap(stock -> stock.getId().getSymbol(),
+                .collect(Collectors.toMap(
+                        stock -> stock.getId().getSymbol(),
                         Function.identity(),
-                        (a, b) -> a));
+                        (a, b) -> a
+                ));
 
+        // 3) 응답 변환
         return newsDocuments.stream()
-                .map(newsDocument -> GetRealTimeNewsResponse.fromDocument(newsDocument, stockByStockCode))
+                .map(doc -> GetRealTimeNewsResponse.fromDocument(doc, stockByStockCode))
                 .toList();
     }
 
+    private static Stream<String> extractSymbols(NewsDocument doc) {
+        Stream<String> primary = Stream.of(doc.getSymbol());
+        Stream<String> related = (doc.getRelatedStockCodes() == null)
+                ? Stream.empty()
+                : doc.getRelatedStockCodes().stream();
+        return Stream.concat(primary, related);
+    }
 
+    private static Stream<StockMasterId> toBothMarkets(String symbol) {
+        // 필요하면 여기서 symbol 포맷 검증(예: 6자리)도 추가 가능
+        return Stream.of(
+                StockMasterId.kospi(symbol),
+                StockMasterId.kosdaq(symbol)
+        );
+    }
 }
