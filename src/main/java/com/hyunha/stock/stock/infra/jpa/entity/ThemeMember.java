@@ -18,8 +18,8 @@ public class ThemeMember {
 
     @ManyToOne
     @JoinColumns(value = {
-            @JoinColumn(name = "symbol"),
-            @JoinColumn(name = "market")
+            @JoinColumn(name = "market"),
+            @JoinColumn(name = "stock_code")
     })
     private Stock stock;
 
