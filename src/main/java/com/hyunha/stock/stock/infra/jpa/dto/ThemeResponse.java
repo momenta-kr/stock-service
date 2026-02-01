@@ -6,6 +6,8 @@ public record ThemeResponse(
         String themeCode,
         String themeName,
         long stockCount,
-        List<String> stockCodes
+        List<Stock> stocks
 ) {
+
+    public record Stock(String stockCode, String stockName){}
 }

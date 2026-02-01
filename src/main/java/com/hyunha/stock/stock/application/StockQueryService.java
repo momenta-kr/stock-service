@@ -1,10 +1,13 @@
 package com.hyunha.stock.stock.application;
 
+import com.hyunha.stock.stock.api.dto.GetDomesticStockCurrentPriceOutput;
 import com.hyunha.stock.stock.api.dto.GetInvestmentOpinionResponse;
 import com.hyunha.stock.stock.domain.port.out.StockCacheReader;
 import com.hyunha.stock.stock.domain.port.out.StockCacheWriter;
 import com.hyunha.stock.stock.domain.port.out.StockQueryPort;
 import com.hyunha.stock.stock.infra.redis.RedisKeyFactory;
+import com.hyunha.stock.stock.infra.redis.dto.DomesticStockCurrentPriceResponse;
+import com.hyunha.stock.stock.infra.redis.enums.RedisKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,5 +28,12 @@ public class StockQueryService {
                     stockCacheWriter.save(RedisKeyFactory.INVESTMENT_OPINION_KEY, investmentOpinion);
                     return investmentOpinion;
                 });
+    }
+
+    public GetDomesticStockCurrentPriceOutput getStock(String stockCode) {
+        List<DomesticStockCurrentPriceResponse> domesticStockCurrentPrices = stockCacheReader.getDomesticStockCurrentPrices(List.of(RedisKey.STOCK_INFO + ":" + stockCode));
+        if (domesticStockCurrentPrices.isEmpty()) return null;
+
+        return GetDomesticStockCurrentPriceOutput.from(domesticStockCurrentPrices.getFirst().getOutput());
     }
 }

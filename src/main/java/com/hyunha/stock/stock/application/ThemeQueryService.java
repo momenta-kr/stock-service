@@ -25,7 +25,8 @@ public class ThemeQueryService {
 
         // ✅ 1) 전체 종목코드 중복 제거
         List<String> uniqueStockCodes = themeResponses.stream()
-                .flatMap(tr -> tr.stockCodes().stream())
+                .flatMap(tr -> tr.stocks().stream())
+                .map(ThemeResponse.Stock::stockCode)
                 .distinct()
                 .toList();
 
@@ -52,10 +53,11 @@ public class ThemeQueryService {
         return themeResponses.stream()
                 .map(themeResponse -> {
                     // ✅ 4) 테마 내부 stockCodes도 혹시 모를 중복 제거(순서 유지)
-                    List<String> themeStockCodes = themeResponse.stockCodes().stream()
-                            .filter(Objects::nonNull)
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
+                    List<ThemeResponse.Stock> stocks = themeResponse.stocks().stream()
+                            .toList();
+
+                    List<String> themeStockCodes = stocks.stream()
+                            .map(ThemeResponse.Stock::stockCode)
                             .distinct()
                             .toList();
 
@@ -78,7 +80,15 @@ public class ThemeQueryService {
                             themeResponse.themeCode(),
                             themeResponse.themeName(),
                             avg.isPresent() ? avg.getAsDouble() : null,
-                            outputs
+                            outputs.stream()
+                                    .map(output -> GetThemeResponse.Output.from(
+                                            stocks.stream()
+                                                    .filter(stock -> Objects.equals(stock.stockCode(), output.getStockShortCode()))
+                                                    .findFirst()
+                                                    .map(ThemeResponse.Stock::stockName)
+                                                    .orElse(null),
+                                            output
+                                    )).toList()
                     );
                 })
                 .toList();

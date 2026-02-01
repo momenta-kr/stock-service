@@ -25,11 +25,11 @@ public class ThemeQueryAdapter implements ThemeQueryPort {
         Map<Theme, Long> countByTheme = themeMemberList.stream()
                 .collect(Collectors.groupingBy(ThemeMember::getTheme, Collectors.counting()));
 
-        Map<String, List<String>> stockCodesByThemeCode = themeMemberList.stream()
+        Map<String, List<Stock>> stocksByThemeCode = themeMemberList.stream()
                 .collect(Collectors.groupingBy(
                         tm -> tm.getTheme().getCode(),                 // key: themeCode
                         Collectors.mapping(
-                                tm -> tm.getStock().getId().getSymbol(),       // value: symbol (없으면 getStockCode())
+                                ThemeMember::getStock,       // value: symbol (없으면 getStockCode())
                                 Collectors.toList()
                         )
                 ));
@@ -39,7 +39,9 @@ public class ThemeQueryAdapter implements ThemeQueryPort {
                                 entry.getKey().getCode(),
                                 entry.getKey().getName(),
                                 entry.getValue(),
-                                stockCodesByThemeCode.get(entry.getKey().getCode())
+                                stocksByThemeCode.get(entry.getKey().getCode()).stream()
+                                        .map(stock -> new ThemeResponse.Stock(stock.getId().getSymbol(), stock.getNameKo()))
+                                        .toList()
                         )
 
                 )
