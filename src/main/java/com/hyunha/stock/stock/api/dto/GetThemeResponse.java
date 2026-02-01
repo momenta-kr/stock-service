@@ -1,9 +1,13 @@
 package com.hyunha.stock.stock.api.dto;
 
+import com.hyunha.stock.stock.infra.redis.dto.DomesticStockCurrentPriceResponse;
+
+import java.util.List;
+
 public record GetThemeResponse(
         String themeCode,
         String themeName,
-        long stockCount,
-        double averageChangeRate
-) {
+        Double averageChangeRateFromPreviousDay,
+        List<DomesticStockCurrentPriceResponse.Output> stockInfoList
+        ) {
 }
