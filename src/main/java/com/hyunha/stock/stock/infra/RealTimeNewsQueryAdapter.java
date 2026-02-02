@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,13 +34,17 @@ public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
 
     private final NewsEsRepository newsEsRepository;
     private final StockRepository stockRepository;
+    // 예: "1H", "6H", "1D", "7D", "30D", "ALL"
+    private static final Pattern RANGE_PATTERN = Pattern.compile("^(\\d+)\\s*(MIN|M|H|D|W)$");
 
-    public List<GetRealTimeNewsResponse> getRealTimeNews() {
-        List<NewsDocument> newsDocuments =
-                newsEsRepository.findByOrderByPublishedAtDesc(Pageable.ofSize(PAGE_SIZE));
+
+    @Override
+    public Slice<GetRealTimeNewsResponse> getRealTimeNews(Pageable pageable, String timeRange, String sentiment, String category){
+        Slice<NewsDocument> newsSlice = newsEsRepository.findRealtime(timeRange, sentiment, category, pageable);
+        List<NewsDocument> newsDocuments = newsSlice.getContent();
 
         if (newsDocuments.isEmpty()) {
-            return List.of();
+            return new SliceImpl<>(List.of(), pageable, false);
         }
 
         // 1) 뉴스 문서에서 심볼(대표 + related) 뽑고, kospi/kosdaq 둘 다 만들어서 중복 제거
@@ -45,7 +52,7 @@ public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
                 .flatMap(RealTimeNewsQueryAdapter::extractSymbols)
                 .filter(StringUtils::isNotBlank)
                 .flatMap(RealTimeNewsQueryAdapter::toBothMarkets)
-                .collect(Collectors.toCollection(LinkedHashSet::new)); // 순서 유지 + 중복 제거
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // 2) DB 조회 후 symbol 기준으로 매핑(중복은 먼저 들어온 걸 우선)
         Map<String, Stock> stockByStockCode = stockRepository.findByIdIn(new ArrayList<>(stockMasterIds))
@@ -56,10 +63,12 @@ public class RealTimeNewsQueryAdapter implements RealTimeNewsQueryPort {
                         (a, b) -> a
                 ));
 
-        // 3) 응답 변환
-        return newsDocuments.stream()
+        // 3) Slice content 변환 + hasNext 유지
+        List<GetRealTimeNewsResponse> content = newsDocuments.stream()
                 .map(doc -> GetRealTimeNewsResponse.fromDocument(doc, stockByStockCode))
                 .toList();
+
+        return new SliceImpl<>(content, pageable, newsSlice.hasNext());
     }
 
     private static Stream<String> extractSymbols(NewsDocument doc) {
