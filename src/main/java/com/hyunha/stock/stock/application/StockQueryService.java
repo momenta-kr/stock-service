@@ -34,7 +34,7 @@ public class StockQueryService {
     }
 
     public GetDomesticStockCurrentPriceOutput getStock(String stockCode) {
-        List<DomesticStockCurrentPriceResponse> domesticStockCurrentPrices = stockCacheReader.getDomesticStockCurrentPrices(List.of(RedisKey.STOCK_INFO + ":" + stockCode));
+        List<DomesticStockCurrentPriceResponse> domesticStockCurrentPrices = stockCacheReader.getDomesticStockCurrentPrices(List.of(RedisKey.STOCK_INFO.getKey() + ":" + stockCode));
         if (domesticStockCurrentPrices.isEmpty()) return null;
 
         return GetDomesticStockCurrentPriceOutput.from(domesticStockCurrentPrices.getFirst().getOutput());
