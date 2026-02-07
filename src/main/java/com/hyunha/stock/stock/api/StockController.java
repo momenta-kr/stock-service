@@ -33,4 +33,9 @@ public class StockController {
     public GetDomesticStockCurrentPriceOutput getStock(@PathVariable String stockCode) {
         return stockQueryService.getStock(stockCode);
     }
+
+    @GetMapping("/{stockCode}/news")
+    public void getNews(@PathVariable String stockCode) {
+        stockQueryService.getNews(stockCode);
+    }
 }

@@ -56,4 +56,9 @@ public class StockQueryService {
                 ))
                 .toList();
     }
+
+    public void getNews(String stockCode) {
+
+
+    }
 }
